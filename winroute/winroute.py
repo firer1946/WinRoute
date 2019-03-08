@@ -286,6 +286,82 @@ class WinRoute():
          
         
         return
+    def DeleteIpForwardEntry(self,dwForwardDest,dwForwardMask,dwForwardNextHop=None,dwForwardMetric=0,ForwardIfIndex=None):
+        DWORD=self.DWORD
+        NULL=self.NULL
+        NO_ERROR=self.NO_ERROR
+        bOrder=self.bOrder
+        ANY_SIZE=self.ANY_SIZE
+        
+        class MIB_IPFORWARDROW(ctypes.Structure):
+                
+                _fields_ = [('dwForwardDest', DWORD),#目标IP
+                            ('dwForwardMask', DWORD),#网络掩码
+                            ('dwForwardPolicy', DWORD),#多径路由策略
+                            ('dwForwardNextHop', DWORD),#下一跳IP
+                            ('dwForwardIfIndex', DWORD),#接口索引
+                            ('dwForwardType', DWORD),#路由类型
+                            ('dwForwardProto', DWORD),#路由协议
+                            ('dwForwardAge', DWORD),#路由时间
+                            ('dwForwardNextHopAS', DWORD),#下一跳编号
+                            ('dwForwardMetric1', DWORD),#跃点数
+                            ('dwForwardMetric2', DWORD),
+                            ('dwForwardMetric3', DWORD),
+                            ('dwForwardMetric4', DWORD),
+                            ('dwForwardMetric5', DWORD)]
+                
+        pRoute=MIB_IPFORWARDROW() #建立结构域
+        
+        
+        pRoute.dwForwardDest = struct.unpack("I",socket.inet_aton(dwForwardDest))[0]  #转换“0.0.0.0”格式的IP地址为网络序，注意不是主机字节序
+    
+        pRoute.dwForwardMask =struct.unpack("I",socket.inet_aton(dwForwardMask))[0]
+            
+            
+    
+            
+                #如果不给定网关，则默认为默认路由的网关
+        pRoute.dwForwardNextHop = self.dwForwardNextHop
+        if dwForwardNextHop != None:
+            pRoute.dwForwardNextHop = struct.unpack("I",socket.inet_aton(dwForwardNextHop))[0]
+            
+            
+            
+        pRoute.dwForwardPolicy = self.dwForwardPolicy
+                
+                #如果不给定ForwardIfIndex，则默认为默认路由的接口
+        pRoute.dwForwardIfIndex=self.dwForwardIfIndex
+        if ForwardIfIndex != None:
+            pRoute.dwForwardIfIndex=dwForwardIfIndex
+            
+            
+        pRoute.dwForwardType=self.dwForwardType
+        pRoute.dwForwardProto=self.dwForwardProto
+        pRoute.dwForwardAge=self.dwForwardAge
+        pRoute.dwForwardNextHopAS=self.dwForwardNextHopAS
+                
+                #win7及win10无法设定小于默认路由的Metric值，这里使用了相加。若不给定，最终与默认路由的Metric相同
+        pRoute.dwForwardMetric1=self.dwForwardMetric1+dwForwardMetric
+        
+        
+        
+        pRoute.dwForwardMetric2=self.dwForwardMetric2
+        pRoute.dwForwardMetric3=self.dwForwardMetric3
+        pRoute.dwForwardMetric4=self.dwForwardMetric4
+        pRoute.dwForwardMetric5=self.dwForwardMetric5
+        
+        
+        dwStatus=ctypes.windll.iphlpapi.DeleteIpForwardEntry(ctypes.byref(pRoute))
+        if dwStatus==5:
+            print("权限不足")
+        if dwStatus==5010:
+            print("已存在,删除失败")
+        if dwStatus==0:
+            print ("删除成功")
+            
+         
+        
+        return
     
     
           
